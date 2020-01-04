@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <title>Simple local WebRTC example</title>
+</head>
+<body>
+	<p>Get two chrome clients and open this file on both of them. Let's call the first one A and the second one B. Go to the console on both of them and run some commands.</p>
+
+	<p>On both clients, create a new RTC instance with "var rtc = new RTC();". Then, in client A, run "rtc.init();"</p>
+
+	<p>Copy the spd printed in the console and go to client B. There, paste the sdp in the textbox and make sure it ends with a newline.</p>
+
+	<p>Then run "rtc.connect(textbox.value)". Copy the new sdp you got back and go back to client A again. Paste the new sdp in the textbox here and again make sure it ends with a newline. Then run the command "rtc.answer(textbox.value)".</p>
+
+	<p>Now the connection is established and you can use the "rtc.send(string)" to send messages that will end up in the console on the other client.</p>
+
+	<textarea id="textbox" style="width: 100%; height: 300px"></textarea>
+
+	<script>
+		// Creates rtc instance
+		function RTC () {
+			// Creates rtc connection with data channel
+			this.connection = new RTCPeerConnection();
+			this.channel = this.connection.createDataChannel("test", {negotiated: true, id: 0});
+
+			// Displays sdp in console when it gets it
+			this.connection.onicecandidate = (event) => {
+				this.connection.onicecandidate = null;
+				console.log(this.connection.localDescription.sdp);
+			};
+
+			// Displays messages from the other client in the console
+			this.channel.onmessage = (event) => {
+				console.log(event.data);
+			};
+		}
+
+		// Creates new connection
+		RTC.prototype.init = function () {
+			this.connection.createOffer().then((session) => this.connection.setLocalDescription(session));
+		};
+
+		// Connects to a connection on another client
+		RTC.prototype.connect = function (sdp) {
+			this.connection.setRemoteDescription({type: "offer", sdp: sdp});
+			this.connection.createAnswer().then((session) => this.connection.setLocalDescription(session));
+		};
+
+		// Answers a connection request from another client
+		RTC.prototype.answer = function (sdp) {
+			this.connection.setRemoteDescription({type: "answer", sdp: sdp});
+		};
+
+		// Sends a string to the other client
+		RTC.prototype.send = function (str) {
+			this.channel.send(str);
+		};
+	</script>
+</body>
+</html>
